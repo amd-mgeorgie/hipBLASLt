@@ -209,7 +209,7 @@ constexpr hipDataType string_to_hip_datatype(const std::string& value)
 #endif
 
     return
-        value == "f32_r" || value == "s" ? HIP_R_32F  :
+        value == "xf32_r" || "f32_r" || value == "s" ? HIP_R_32F  :
         value == "f64_r" || value == "d" ? HIP_R_64F  :
         value == "f16_r" || value == "h" ? HIP_R_16F  :
         value == "bf16_r"                ? HIP_R_16BF  :
@@ -220,6 +220,8 @@ constexpr hipDataType string_to_hip_datatype(const std::string& value)
         value == "i32_r" || value == "i" ? HIP_R_32I  :
         HIPBLASLT_DATATYPE_INVALID;
 }
+
+
 
 HIPBLASLT_EXPORT
 constexpr hipDataType string_to_hip_datatype_assert(const std::string& value)

@@ -29,7 +29,7 @@
 #include "exceptions.hpp"
 #include "hipblaslt-ext-op.h"
 #include "hipblaslt_internal.hpp"
-
+#include "hipblaslt_ostream.hpp"
 #include <hip/hip_runtime_api.h>
 #include <iostream>
 #include <rocblaslt.h>
@@ -44,6 +44,10 @@
 
 bool override_path_compare_git_version(OverrideSingleton& override, hipblasLtHandle_t& handle)
 {
+    //std::cout << "override_path_compare_git_version, m" << std::flush << std::endl;
+    //log_info(__func__, "override_path_compare_git_version, m");
+    //hipblaslt_cout << "override_path_compare_git_version, m" << std::endl;
+
     char git_version[128];
     hipblasLtGetGitRevision(handle, &git_version[0]);
     std::ifstream file_read(override.file_path);
@@ -54,6 +58,16 @@ bool override_path_compare_git_version(OverrideSingleton& override, hipblasLtHan
     if(pos != std::string::npos)
     {
         std::string file_version = firstline.substr(pos + header.length());
+
+        //std::cout << "File version: " << file_version << std::flush << std::endl;
+        //std::cout << "Git version"   << git_version << std::flush << std::endl;
+
+        //hipblaslt_cout << "File version: " << file_version << std::endl;
+        //hipblaslt_cout << "Git version: " << git_version << std::endl;
+
+        //log_info(__func__, git_version);
+        //log_info(__func__, file_version);
+
         if(file_version == git_version)
             return true;
     }
@@ -432,14 +446,21 @@ hipblasStatus_t
                                     int*                             returnAlgoCount)
 try
 {
+    // std::cout << "hipblasLtMatmulAlgoGetHeuristic, main " << std::flush << std::endl;
+    // log_info(__func__, "hipblasLtMatmulAlgoGetHeuristic, main ");
+    // hipblaslt_cout << "hipblasLtMatmulAlgoGetHeuristic, main" << std::endl;
+
     rocblaslt::Debug::Instance().markerStart("hipblasLtMatmulAlgoGetHeuristic");
 
     OverrideSingleton& override = OverrideSingleton::getInstance();
     if(override.env_mode)
     {
+        // hipblaslt_cout << "hipblasLtMatmulAlgoGetHeuristic, if env_mode" << std::endl;
+
         bool override_success = override_path_compare_git_version(override, handle);
         if(override_success)
             log_info(__func__, "HIPBLASLT_TUNING_OVERRIDE_FILE is the correct setting.");
+            
         else
             log_error(
                 __func__,

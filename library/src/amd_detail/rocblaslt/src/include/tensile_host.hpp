@@ -232,6 +232,7 @@ inline rocisa::DataType hipDataType_to_tensile_type(hipDataType type)
         return rocisa::DataType::Float8_fnuz;
     case HIP_R_8F_E5M2_FNUZ:
         return rocisa::DataType::BFloat8_fnuz;
+    case HIP_R    
 #ifdef ROCM_USE_FLOAT8
     case HIP_R_8F_E4M3:
         return rocisa::DataType::Float8;
@@ -247,6 +248,27 @@ inline rocisa::DataType hipDataType_to_tensile_type(hipDataType type)
         return rocisa::DataType::None;
     }
 }
+// own
+inline rocisa::DataType hipDataType_to_tensile_compute_type(const hipblasComputeType_t type)
+{
+    switch(type)
+    {
+    case HIPBLAS_COMPUTE_32F:
+        return rocisa::DataType::Float;
+    case HIPBLAS_COMPUTE_32F_FAST_TF32:
+        return rocisa::DataType::XFloat32;
+    case HIPBLAS_COMPUTE_64F:
+        return rocisa::DataType::Double;
+    case HIPBLAS_COMPUTE_32I:
+        return rocisa::DataType::Int32;
+    case HIPBLAS_COMPUTE_32F_FAST_16F:
+        return rocisa::DataType::Half;
+    default:
+        assert(!"hipDataType_to_tensile_compute_type: non-supported type");
+        return rocisa::DataType::None;
+    }
+}
+
 
 namespace
 {

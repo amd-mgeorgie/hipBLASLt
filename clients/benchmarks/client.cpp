@@ -233,12 +233,14 @@ void fix_batch(int argc, char* argv[])
 
 bool tuning_path_compare_git_version(const char* tuningEnv)
 {
+    // log_info(__func__, "tuning_path_compare_git_version, m");
+    // hipblaslt_cout << "tuning_path_compare_git_version, m" << std::endl;
     char                   git_version[128];
     hipblaslt_local_handle handle;
     hipblasLtGetGitRevision(handle, &git_version[0]);
     std::string   tuningPath = tuningEnv;
-    std::ifstream file_read(tuningPath);
-
+    std::ifstream file_read(tuningPath);    
+    
     if(file_read.peek() == std::ifstream::traits_type::eof())
     {
         std::ofstream file_write(tuningPath, std::ios::app);
@@ -271,6 +273,10 @@ bool tuning_path_compare_git_version(const char* tuningEnv)
 int main(int argc, char* argv[])
 try
 {
+    hipblaslt_cout << "Main, m" << std::endl;
+    // log_info(__func__, "Main, m");
+    // std::cout << "Main, m" << std::flush << std::endl;
+    
     fix_batch(argc, argv);
     Arguments   arg;
     std::string function;

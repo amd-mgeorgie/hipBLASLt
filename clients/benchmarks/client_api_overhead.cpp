@@ -180,8 +180,8 @@ int main(int argc, char** argv)
         printUsage(argv[0]);
         return err;
     }
-
-    std::cout << "[overhead]:function,api_name,us/iter,best_us\n";
+    //std::cout << "main, client_api_overhead" << std::flush << std::endl;
+    //std::cout << "[overhead]:function,api_name,us/iter,best_us\n";
     calcOverheadGetHeuristic();
     std::cout << "api_overhead,hipblasLtMatmulAlgoGetHeuristic,"
               << std::to_string(total_getHeur.count() / hotIters) << ","

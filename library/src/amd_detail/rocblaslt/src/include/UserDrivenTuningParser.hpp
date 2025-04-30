@@ -31,7 +31,7 @@
 #include "tensile_host.hpp"
 #include <Tensile/DataTypes.hpp>
 #include <shared_mutex>
-
+#include "hipblaslt_ostream.hpp"
 #include <map>
 #include <string>
 #include <vector>
@@ -56,10 +56,16 @@ public:
 private:
     OverrideSingleton()
     {
+        
+        // hipblaslt_cout << "OverrideSingleton, m" << std::endl;
+
         char* Env = getenv("HIPBLASLT_TUNING_OVERRIDE_FILE");
         if(Env)
-        {
+        {                        
             file_path = Env;
+            
+            //std::cout << file_path << std::flush << std::endl;
+            //hipblaslt_cout << file_path << std::endl;
             env_mode  = true;
         }
     }
@@ -84,6 +90,7 @@ namespace TensileLite
                         size_t           n,
                         size_t           k,
                         size_t           batchSize);
+
         ProblemOverride(const ProblemOverride& problem);
 
         inline bool transA() const
@@ -127,6 +134,16 @@ namespace TensileLite
             return m_batchSize;
         }
 
+        inline size_t rotSize() const
+        {
+            return m_rotSize;
+        }
+
+        inline bool to_use_bias() const
+        {
+            return m_to_use_bias;
+        }
+
     private:
         bool             m_transA;
         bool             m_transB;
@@ -138,6 +155,8 @@ namespace TensileLite
         size_t           m_n;
         size_t           m_k;
         size_t           m_batchSize;
+        bool             m_to_use_bias;
+        size_t           m_rotSize;
     };
 
     std::pair<ProblemOverride, int> problemFromEntries(const std::vector<std::string>& entries);
@@ -173,7 +192,11 @@ namespace TensileLite
                                         lhs.k(),
                                         rhs.k(),
                                         lhs.batchSize(),
-                                        rhs.batchSize());
+                                        rhs.batchSize(),
+                                        lhs.to_use_bias(),
+                                        rhs.to_use_bias(),
+                                        lhs.rotSize(),
+                                        rhs.rotSize());
         }
     };
 
@@ -200,12 +223,12 @@ namespace TensileLite
             return size;
         }
 
-        auto find(const ProblemOverride& prob_key)
-        {
-            std::shared_lock<std::shared_timed_mutex> lock(m_mutex);
-            auto                                      iter = m_override.equal_range(prob_key);
-            return iter;
-        }
+            auto find(const ProblemOverride& prob_key)
+            {
+                std::shared_lock<std::shared_timed_mutex> lock(m_mutex);
+                auto                                      iter = m_override.equal_range(prob_key);
+                return iter;
+            }
 
         void add(const std::pair<ProblemOverride, int>& problemSolution)
         {

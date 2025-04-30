@@ -32,7 +32,7 @@
 #include "rocroller_host.hpp"
 #include "tensile_host.hpp"
 #include "utility.hpp"
-
+#include "hipblaslt_ostream.hpp"
 #ifndef WIN32
 #include <link.h>
 #endif
@@ -215,7 +215,11 @@ bool problem_override_from_file_cpp(
     std::vector<rocblaslt_matmul_heuristic_result>& heuristicResultsArray,
     const std::string&                              file_path)
 {
-
+    
+    std::cout << "Processing file: " << file_path << std::flush << std::endl;
+    log_info(__func__, "problem_override_from_file_cpp");
+    hipblaslt_cout << "Processing file: " << file_path << std::flush << std::endl;
+    
     bool success = false;
     TensileLite::getContractionProblemsFromFile(file_path);
     TensileLite::OverrideMap& m_override = TensileLite::OverrideMap::getMap();
@@ -1985,6 +1989,9 @@ rocblaslt_status
                                      const int              requestedAlgoCount,
                                      std::vector<rocblaslt_matmul_heuristic_result>& results)
 {
+
+    std::cout << "rocblaslt_algo_get_heuristic_cpp, main!" << std::endl;
+    
     if(requestedAlgoCount < 1)
     {
         log_error(__func__, "invalid requested count", requestedAlgoCount);
@@ -2002,9 +2009,11 @@ rocblaslt_status
         OverrideSingleton&                             override = OverrideSingleton::getInstance();
         bool                                           override_success = false;
         std::vector<rocblaslt_matmul_heuristic_result> override_result;
-
+        std::cout << "rocblaslt_algo_get_heuristic_cpp!" << std::endl;
         if(override.env_mode)
         {
+            std::cout << "rocblaslt_algo_get_heuristic_cpp, if!" << override.file_path << std::endl;
+
             override_success = problem_override_from_file_cpp(
                 handle, gemmType, gemmData, workspaceBytes, override_result, override.file_path);
 

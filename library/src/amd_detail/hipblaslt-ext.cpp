@@ -635,6 +635,8 @@ namespace hipblaslt_ext
         const GemmPreference&                          pref,
         std::vector<hipblasLtMatmulHeuristicResult_t>& heuristicResults)
     {
+        // std::cout << "algoGetHeuristic,main " << std::endl;
+        
         rocblaslt::Debug::Instance().markerStart("hipblasLtAlgoGetHeuristicCpp");
         if(m_gemm_count == 0)
         {
@@ -644,7 +646,8 @@ namespace hipblaslt_ext
         auto gemmType = static_cast<rocblaslt::RocGemmType>(m_gemm_type);
         auto results
             = reinterpret_cast<std::vector<rocblaslt_matmul_heuristic_result>*>(&heuristicResults);
-        results->clear();
+        results->clear();       
+
         auto status = RocBlasLtStatusToHIPStatus(
             rocblaslt_algo_get_heuristic_cpp((rocblaslt_handle)m_handle,
                                              gemmType,

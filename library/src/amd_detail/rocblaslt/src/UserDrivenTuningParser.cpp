@@ -145,15 +145,15 @@ namespace TensileLite
             inputTypeA   = hipDataType_to_tensile_type(string_to_hip_datatype(entries[17]));
             inputTypeB   = hipDataType_to_tensile_type(string_to_hip_datatype(entries[18]));
             outputType   = hipDataType_to_tensile_type(string_to_hip_datatype(entries[19]));
-            // computeType  = hipDataType_to_tensile_type(string_to_hip_datatype(entries[21]));
-            computeType  = hipDataType_to_tensile_compute_type(string_to_hipblas_computetype(entries[21]));
+            computeType  = hipDataType_to_tensile_type(string_to_hip_datatype(entries[21]));
+            // computeType  = hipDataType_to_tensi le_compute_type(string_to_hipblas_computetype(entries[21]));
             // TODO: Workaround for TF32 support, should be handled with the above,
-            /*
+            
             if (entries[21] == "xf32_r")            
             {
                 computeType = rocisa::DataType::XFloat32;
             }
-            sudo*/
+            
             rotSize = std::abs(std::stoi(entries[28]));
             to_use_bias  = static_cast<bool>(std::abs(std::stoi(entries[30])));            
             solution_idx = std::stoi(entries[34]);

@@ -249,6 +249,7 @@ inline rocisa::DataType hipDataType_to_tensile_type(hipDataType type)
     }
 }
 // own
+/*
 inline rocisa::DataType hipDataType_to_tensile_compute_type(const hipblasComputeType_t type)
 {
     switch(type)
@@ -268,7 +269,7 @@ inline rocisa::DataType hipDataType_to_tensile_compute_type(const hipblasCompute
         return rocisa::DataType::None;
     }
 }
-
+*/
 
 namespace
 {

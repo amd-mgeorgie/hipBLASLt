@@ -143,7 +143,10 @@ namespace TensileLite
         {
             return m_to_use_bias;
         }
-
+        inline rocisa::DataType biasType() const
+        {
+            return m_biasType;
+        }
     private:
         bool             m_transA;
         bool             m_transB;
@@ -151,6 +154,7 @@ namespace TensileLite
         rocisa::DataType m_inputTypeB;
         rocisa::DataType m_computeType;
         rocisa::DataType m_outputType;
+        rocisa::DataType m_biasType;
         size_t           m_m;
         size_t           m_n;
         size_t           m_k;
@@ -196,7 +200,9 @@ namespace TensileLite
                                         lhs.to_use_bias(),
                                         rhs.to_use_bias(),
                                         lhs.rotSize(),
-                                        rhs.rotSize());
+                                        rhs.rotSize(),
+                                        lhs.biasType(),
+                                        rhs.biasType());
         }
     };
 

@@ -117,8 +117,11 @@ namespace TensileLite
         //TODO: not correct expected format!
         // Expected format: transA,transB, batch_count, M,N,K,input_type,output_type,compute_type,solution_index
         // Example, 37 positions (position index at second row)
-        // T, N, 0, 1, 12288, 14850, 3072, 1, 3072, 37748736,  0, 3072, 45619200, 12288, 182476800, 12288, 182476800, bf16_r, bf16_r, bf16_r, bf16_r, f32_r,  0,  0,  0,  0,  0, none,  0, f32_r,  512,  621160, 274.349, 1804.91, 140501, gfx942:sramecc+:xnack-, 304
-        // 0, 1, 2, 3,     4,     5,    6, 7,    8,        9, 10,   11,       12,    13,        14,    15,        16,     17,     18,     19,     20,    21, 22, 23, 24, 25, 26,   27, 28,    29,   30,      31,      32,      33,     34,                     35,  36
+
+        // transA,transB,grouped_gemm,batch_count,     m,    n,    k, alpha,  lda,  stride_a, beta,  ldb, stride_b,   ldc,  stride_c,   ldd,  stride_d, a_type, b_type, c_type, d_type, compute_type, scaleA, scaleB, scaleC, scaleD, amaxD, activation_type, bias_vector, bias_type, rotating_buffer, hipblaslt-Gflops, hipblaslt-GB/s,      us, sol_idx,              arch, CUs 
+        // T,     N,           0,          1, 57344, 2048, 8192,     1, 8192, 469762048,    0, 8192, 16777216, 57344, 117440512, 57344, 117440512, bf16_r, bf16_r, bf16_r, bf16_r,        f32_r,      0,      0,      0,      0,     0,            none,           0,     f32_r,             512,           491987,        287.653, 3910.97,  105597, gfx942:sramecc+:xnack-, 304
+        // 0,     1,           2,          3,     4,    5,    6,     7,    8,         9,   10,   11,       12,    13,        14,    15,        16,     17,     18,     19,     20,           21,     22,     23,     24,     25,    26,              27,          28,        29,              30,               31,             32,      33       34,                     35,  36
+
 
         bool transA = (entries[0] != "N");
         bool transB = (entries[1] != "N");
@@ -127,6 +130,8 @@ namespace TensileLite
         rocisa::DataType inputTypeA  = rocisa::DataType::None;
         rocisa::DataType inputTypeB  = rocisa::DataType::None;
         rocisa::DataType outputType  = rocisa::DataType::None;
+        rocisa::DataType biasType    = rocisa::DataType::None;
+
         rocisa::DataType computeType = rocisa::DataType::None;
 
         bool to_use_bias = false;
@@ -142,22 +147,27 @@ namespace TensileLite
             m            = std::stol(entries[4]);
             n            = std::stol(entries[5]);
             k            = std::stol(entries[6]);
+
+
             inputTypeA   = hipDataType_to_tensile_type(string_to_hip_datatype(entries[17]));
             inputTypeB   = hipDataType_to_tensile_type(string_to_hip_datatype(entries[18]));
             outputType   = hipDataType_to_tensile_type(string_to_hip_datatype(entries[19]));
+
+            //biasType     = hipDataType_to_tensile_type(string_to_hip_datatype(entries[19]));
+
             computeType  = hipDataType_to_tensile_type(string_to_hip_datatype(entries[21]));
             // computeType  = hipDataType_to_tensile_compute_type(string_to_hipblas_computetype(entries[21]));
             // TODO: Workaround for TF32 support, should be handled with the above
             
-            if (entries[21] == "xf32_r")            
-            {
+            if (entries[21] == "xf32_r")
                 computeType = rocisa::DataType::XFloat32;
-            }
             
-            rotSize = std::abs(std::stoi(entries[28]));
+            
+            rotSize  = std::abs(std::stoi(entries[28]));
+            biasType = hipDataType_to_tensile_type(string_to_hip_datatype(entries[29]));
             to_use_bias  = static_cast<bool>(std::abs(std::stoi(entries[30])));            
             solution_idx = std::stoi(entries[34]);
-            /*
+            
             hipblaslt_cout << "Fetched Parameters:" << std::flush << std::endl;
             hipblaslt_cout << "b: " << b << std::flush << std::endl;
             hipblaslt_cout << "m: " << m << std::flush << std::endl;
@@ -168,10 +178,13 @@ namespace TensileLite
             hipblaslt_cout << "Output Type: " << outputType << std::flush << std::endl;
             hipblaslt_cout << "Compute Type: " << computeType << std::flush << std::endl;
             hipblaslt_cout << "Rotating Buffer: " << rotSize << std::flush << std::endl;
+
             hipblaslt_cout << "Use To Bias: " << to_use_bias << std::flush << std::endl;
+            hipblaslt_cout << "Bias type " << biasType << std::flush << std::endl;
+            
             hipblaslt_cout << "Solution Index: " << solution_idx << std::flush << std::endl;
             
-
+            /*
             std::ostringstream logStream;
             
             logStream << "Fetched Parameters:" << std::flush << std::endl;

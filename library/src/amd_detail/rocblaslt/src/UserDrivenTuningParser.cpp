@@ -146,7 +146,7 @@ namespace TensileLite
             inputTypeB   = hipDataType_to_tensile_type(string_to_hip_datatype(entries[18]));
             outputType   = hipDataType_to_tensile_type(string_to_hip_datatype(entries[19]));
             computeType  = hipDataType_to_tensile_type(string_to_hip_datatype(entries[21]));
-            // computeType  = hipDataType_to_tensi le_compute_type(string_to_hipblas_computetype(entries[21]));
+            // computeType  = hipDataType_to_tensile_compute_type(string_to_hipblas_computetype(entries[21]));
             // TODO: Workaround for TF32 support, should be handled with the above,
             
             if (entries[21] == "xf32_r")            

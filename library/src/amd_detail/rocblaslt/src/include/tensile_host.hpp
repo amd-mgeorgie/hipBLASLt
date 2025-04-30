@@ -231,8 +231,7 @@ inline rocisa::DataType hipDataType_to_tensile_type(hipDataType type)
     case HIP_R_8F_E4M3_FNUZ:
         return rocisa::DataType::Float8_fnuz;
     case HIP_R_8F_E5M2_FNUZ:
-        return rocisa::DataType::BFloat8_fnuz;
-    case HIP_R    
+        return rocisa::DataType::BFloat8_fnuz;  
 #ifdef ROCM_USE_FLOAT8
     case HIP_R_8F_E4M3:
         return rocisa::DataType::Float8;

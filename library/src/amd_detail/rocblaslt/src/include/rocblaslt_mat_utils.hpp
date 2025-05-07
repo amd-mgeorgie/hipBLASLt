@@ -221,10 +221,18 @@ inline rocblaslt_status validateMatmulArgs(int64_t                       m,
                                            = rocblaslt_pointer_mode_host)
 {
     rocblaslt_status status = rocblaslt_status_continue;
+    hipblaslt_cout << "Validate arguments, compute type: " << compute_type << std::endl;
+    hipblaslt_cout << "Validate arguments, type a: " << type_a << std::endl;
+    hipblaslt_cout << "Validate arguments, type b: " << type_b << std::endl;
+    hipblaslt_cout << "Validate arguments, type c: " << type_c << std::endl;
+    hipblaslt_cout << "Validate arguments, type d: " << type_d << std::endl;
 
     if(!(type_a == HIP_R_32F && type_b == HIP_R_32F && type_c == HIP_R_32F && type_d == HIP_R_32F)
        && compute_type == rocblaslt_compute_f32_fast_xf32)
+       {
+        hipblaslt_cout << "xf32 not implemented!" << std::endl;
         status = rocblaslt_status_not_implemented;
+       }
     if(!((type_a == HIP_R_8I && type_b == HIP_R_8I && type_c == HIP_R_32I && type_d == HIP_R_32I)
          || (type_a == HIP_R_8I && type_b == HIP_R_8I && type_c == HIP_R_8I && type_d == HIP_R_8I))
        && compute_type == rocblaslt_compute_i32)

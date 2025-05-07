@@ -453,8 +453,7 @@ namespace
         {
         case rocblaslt_compute_f16: // setting compute_type to f16_r will fallback to f32_r
             return fallback ? rocisa::DataType::Float : rocisa::DataType::Half;
-        case rocblaslt_compute_f32:
-        case rocblaslt_compute_f32_fast_xf32:
+        case rocblaslt_compute_f32:        
         case rocblaslt_compute_f32_fast_f16:
         case rocblaslt_compute_f32_fast_bf16:
         case rocblaslt_compute_f32_fast_f8_fnuz:
@@ -468,6 +467,8 @@ namespace
         case rocblaslt_compute_f32_fast_bf8f8:
 #endif
             return rocisa::DataType::Float;
+        case rocblaslt_compute_f32_fast_xf32: //MGV 
+            return rocisa::DataType::XFloat32;    
         case rocblaslt_compute_f64:
             return rocisa::DataType::Double;
         case rocblaslt_compute_i32:
@@ -483,8 +484,11 @@ namespace
                                     const rocisa::DataType&       typeB,
                                     const rocblaslt_compute_type& typeCompute)
     {
+        hipblaslt_cout << "roc2TensileComputeInputType " << typeCompute << std::endl;
         switch(typeCompute)
         {
+        case rocblaslt_compute_f32_fast_xf32:
+            return rocisa::DataType::XFloat32; //MGV
         case rocblaslt_compute_f32_fast_f16:
             return rocisa::DataType::Half;
         case rocblaslt_compute_f32_fast_bf16:
@@ -1266,6 +1270,8 @@ namespace
         auto d_type       = hipDataType_to_tensile_type(prob.d_type);
         auto compute_type = roc2TensileType(prob.compute_type, false);
 
+        hipblaslt_cout << "Construct tensile problem, Compute type " << compute_type << std::endl;
+
         // Tensor descriptors for a, b
         TensileLite::TensorDescriptor a, b;
 
@@ -1388,6 +1394,8 @@ namespace
 
         tensileProblem.setComputeInputType(
             roc2TensileComputeInputType(a_type, b_type, prob.compute_type));
+
+
         tensileProblem.setAlphaType(compute_type);
         tensileProblem.setBetaType(compute_type);
 
@@ -1469,7 +1477,7 @@ namespace
 
         tensileProblem.setSwizzleTensorA(prob.swizzleA);
         tensileProblem.setSwizzleTensorB(prob.swizzleB);
-
+        hipblaslt_cout << "Construct tensile problem, out" << std::endl;
         return tensileProblem;
     }
 
@@ -2250,12 +2258,30 @@ struct TensileDataGroupedGemm
 TensileLite::ProblemOverride
     RocblasltContractionProblem2ProblemOverride(const RocblasltContractionProblem& problem)
 {
+
+    hipblaslt_cout << "RocblasltContractionProblem2ProblemOverride, a_type " << problem.a_type << std::endl;
+    hipblaslt_cout << "RocblasltContractionProblem2ProblemOverride, b_type " << problem.a_type << std::endl;
+    hipblaslt_cout << "RocblasltContractionProblem2ProblemOverride, c_type " << problem.c_type << std::endl;
+    hipblaslt_cout << "RocblasltContractionProblem2ProblemOverride, compute_type " << problem.compute_type << std::endl;
+    
+    hipblaslt_cout << "RocblasltContractionProblem2ProblemOverride, bias_type " << problem.bias_type << std::endl;
+    
+    rocisa::DataType compute_type = roc2TensileType(problem.compute_type);
+    hipblaslt_cout << "RocblasltContractionProblem2ProblemOverride, isa compute_type " << compute_type << std::endl;
+    
+
+
+    //if(problem.compute_type=="xf32_r")
+    //    compute_type=rocisa::DataType::XFloat32;
+
     return TensileLite::ProblemOverride(problem.trans_a == HIPBLAS_OP_N ? false : true,
                                         problem.trans_b == HIPBLAS_OP_N ? false : true,
                                         hipDataType_to_tensile_type(problem.a_type),
                                         hipDataType_to_tensile_type(problem.b_type),
-                                        roc2TensileType(problem.compute_type),
+                                        //roc2TensileType(problem.compute_type),
+                                        compute_type,
                                         hipDataType_to_tensile_type(problem.c_type),
+                                        hipDataType_to_tensile_type(problem.bias_type),                                   
                                         problem.m,
                                         problem.n,
                                         problem.k,
@@ -2272,6 +2298,7 @@ TensileLite::ProblemOverride TensileDataGemm2ProblemOverride(std::shared_ptr<voi
                                         data->problem.b().dataType(),
                                         data->problem.computeInputType(),
                                         data->problem.c().dataType(),
+                                        data->problem.bias().dataType(),
                                         data->problem.freeSizeA(0),
                                         data->problem.freeSizeB(0),
                                         data->problem.boundSize(0),
@@ -3266,6 +3293,7 @@ rocblaslt_status getBestSolutions(RocblasltContractionProblem const& prob,
 
     if(!library)
     {
+        hipblaslt_cout << "Invalid rocblaslt pointer" << std::endl;
         return rocblaslt_status_invalid_pointer;
     }
 
@@ -3278,14 +3306,17 @@ rocblaslt_status getBestSolutions(RocblasltContractionProblem const& prob,
 
     auto solutions
         = getSolutions(prob, library, hardware, data->problem, enableEpilogue, requestedAlgoCount);
+    hipblaslt_cout << "Solutions:" << solutions.size() << std::endl;
 
     // when there is no solution for xfloat32, fallback comput_type to fp32
     if(solutions.size() == 0 && prob.compute_type == rocblaslt_compute_f32_fast_xf32)
     {
+        hipblaslt_cout << "No solutions for xf32!" << std::endl;
         log_api(__func__, "no xf32 solutions found, try to fallback fp32");
         data->problem.setF32XdlMathOp(rocisa::DataType::Float);
         solutions = getSolutions(
             prob, library, hardware, data->problem, enableEpilogue, requestedAlgoCount);
+        hipblaslt_cout << "enforcing f32 solutions" << solutions.size() << std::endl;    
     }
 
     memset(
@@ -3297,7 +3328,7 @@ rocblaslt_status getBestSolutions(RocblasltContractionProblem const& prob,
                                    maxWorkSpaceBytes,
                                    data->problem,
                                    *hardware);
-
+    hipblaslt_cout << "get_best_solutions: " << rocblaslt_status_success << std::endl;
     return rocblaslt_status_success;
 }
 
@@ -3317,10 +3348,13 @@ rocblaslt_status getAllSolutions(MyProblem&                                     
 
     if(!library)
     {
+        hipblaslt_cout << "rocblaslt status invalid pointer" << std::endl;
         return rocblaslt_status_invalid_pointer;
     }
-
+    
     std::string deviceFullString(deviceProp->gcnArchName);
+    hipblaslt_cout << "device full string" << deviceFullString << std::endl;
+    
     std::string deviceString = deviceFullString.substr(0, deviceFullString.find(":"));
 
     hardware = TensileLite::hip::GetDevice(*deviceProp);
@@ -3343,6 +3377,8 @@ rocblaslt_status getAllSolutions(MyProblem&                                     
     // when there is no solution for xfloat32, fallback comput_type to fp32
     if(solutions.size() == 0 && prob.f32XdlMathOp() == rocisa::DataType::XFloat32)
     {
+        hipblaslt_cout << "No sols for f32x!" << std::endl;
+        hipblaslt_cout << "Picking solutions for f32!" << std::endl;
         prob.setF32XdlMathOp(rocisa::DataType::Float);
         if constexpr(std::is_same<MyProblem, TensileLite::ContractionProblemGemm>::value)
         {
@@ -3397,6 +3433,7 @@ rocblaslt_status getAllSolutions(RocblasltContractionProblem&                   
     if(useRocRoller(handle, prob))
         return getAllSolutionsRocRoller(prob, handle, heuristicResults, maxWorkSpaceBytes);
 #endif
+    hipblaslt_cout << "ConstructTensileProblem, m, in" << std::endl;
     auto tensile_prob = ConstructTensileProblem(prob);
     return getAllSolutions(tensile_prob, handle, heuristicResults, maxWorkSpaceBytes);
 }
@@ -3513,7 +3550,7 @@ rocblaslt_status isSolutionSupported(rocblaslt_handle       handle,
                                            library;
     std::shared_ptr<hipDeviceProp_t>       deviceProp;
     std::shared_ptr<TensileLite::Hardware> hardware;
-
+    hipblaslt_cout << "IsSolutionsupported, in" << std::endl;
 #if ROCBLASLT_TENSILE_LAZY_LOAD
     // isPreload = true is a workaround for lazy_lib_load
     auto adapter = get_library_and_adapter(&library, &deviceProp, handle->device, true);

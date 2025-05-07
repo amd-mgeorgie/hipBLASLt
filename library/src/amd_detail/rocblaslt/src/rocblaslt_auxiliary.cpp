@@ -101,6 +101,7 @@ inline void heuristicResult_copy(rocblaslt_matmul_heuristic_result* heuristicRes
                                  size_t&                            maxWorkSpaceBytes,
                                  size_t&                            required_workspace_size)
 {
+    
     memcpy(heuristicResultsDest->algo.data,
            heuristicResultsSrc->algo.data,
            sizeof(heuristicResultsDest->algo.data));
@@ -116,7 +117,7 @@ inline bool
                                      int&                               AlgoCount,
                                      bool                               override_option)
 {
-
+    hipblaslt_cout << "heuristicResult_check_duplicated, in" << std::endl;
     int index = -1;
 
     for(int i = 0; i < AlgoCount; i++)
@@ -147,24 +148,34 @@ bool problem_override_from_file(rocblaslt_handle&                 handle,
 {
 
     bool success = false;
+    hipblaslt_cout << "Problem override from file, m" << std::endl;
+    hipblaslt_cout << "Get contraction problems from file, in" << std::endl;
     TensileLite::getContractionProblemsFromFile(file_path);
-    TensileLite::OverrideMap& m_override = TensileLite::OverrideMap::getMap();
+    hipblaslt_cout << "Get contraction problems from file, out" << std::endl;
 
+    TensileLite::OverrideMap& m_override = TensileLite::OverrideMap::getMap();
+    hipblaslt_cout << "override size " << m_override.size() << std::endl;
     if(m_override.size() == 0)
     {
         log_info(__func__, "No valid entries found in override file.");
     }
     else
     {
+        hipblaslt_cout << "else, if" << std::endl;
         std::vector<rocblaslt_matmul_heuristic_result> overrideResults;
         std::vector<int>                               solutionIndex(1);
         TensileLite::ProblemOverride prob_key(RocblasltContractionProblem2ProblemOverride(problem));
         auto                         sol_iter = m_override.find(prob_key);
+        
+        hipblaslt_cout << "Prob key outputType" << prob_key.outputType() << std::endl;
+        hipblaslt_cout << "Prob key compute type" << prob_key.computeType() << std::endl;
+        hipblaslt_cout << "Prob key bias type" << prob_key.biasType() << std::endl;
 
         for(auto sol_idx = std::make_reverse_iterator(sol_iter.second);
             !success && sol_idx != std::make_reverse_iterator(sol_iter.first);
             sol_idx++)
-        {
+        {   
+            hipblaslt_cout << "Solution index, for " << sol_idx->second << std::endl;
             solutionIndex[0] = sol_idx->second;
 
             if(rocblaslt_status_success
@@ -174,6 +185,7 @@ bool problem_override_from_file(rocblaslt_handle&                 handle,
 
                 size_t required_workspace_size = 0;
                 auto&  tensile_data            = matmul_desc->m_data;
+                hipblaslt_cout << "Solution success!" << std::endl;
 
                 if(rocblaslt_status_success
                    == isSolutionSupported(handle,
@@ -182,7 +194,7 @@ bool problem_override_from_file(rocblaslt_handle&                 handle,
                                           &overrideResults[0].algo,
                                           &required_workspace_size))
                 {
-
+                    hipblaslt_cout << "Solution supported!" << std::endl;
                     heuristicResult_copy(&heuristicResultsArray[0],
                                          &overrideResults[0],
                                          pref->max_workspace_bytes,
@@ -194,10 +206,12 @@ bool problem_override_from_file(rocblaslt_handle&                 handle,
 
         if(!success)
         {
+            hipblaslt_cout << "No valid solution found!" << std::endl;
             log_info(__func__, "No valid solution index found in override file.");
         }
         else
         {
+            hipblaslt_cout << "Found solution with index: " << solutionIndex[0] << std::endl;
             std::string mapping_result = "Find solution with index: ";
             mapping_result += std::to_string(solutionIndex[0]);
             log_info(__func__, mapping_result);
@@ -216,13 +230,14 @@ bool problem_override_from_file_cpp(
     const std::string&                              file_path)
 {
     
-    std::cout << "Processing file: " << file_path << std::flush << std::endl;
+    std::cout << "Processing file: " << file_path << std::endl;
     log_info(__func__, "problem_override_from_file_cpp");
-    hipblaslt_cout << "Processing file: " << file_path << std::flush << std::endl;
+    hipblaslt_cout << "Processing file: " << file_path << std::endl;
     
     bool success = false;
     TensileLite::getContractionProblemsFromFile(file_path);
     TensileLite::OverrideMap& m_override = TensileLite::OverrideMap::getMap();
+    hipblaslt_cout << "Override size: " << m_override.size() << std::endl;
 
     if(m_override.size() == 0)
     {
@@ -232,13 +247,21 @@ bool problem_override_from_file_cpp(
     {
         std::vector<rocblaslt_matmul_heuristic_result> overrideResults;
         std::vector<int>                               solutionIndex(1);
+
+        hipblaslt_cout << "else, in " << std::endl;
         TensileLite::ProblemOverride prob_key(TensileDataGemm2ProblemOverride(gemmData));
-        auto                         sol_iter = m_override.find(prob_key);
+
+        hipblaslt_cout << "GEMM : " << prob_key.biasType() << std::endl;
+        hipblaslt_cout << "GEMM : " << prob_key.rotSize() << std::endl;
+        hipblaslt_cout << "GEMM : " << prob_key.to_use_bias() << std::endl;
+
+        auto sol_iter = m_override.find(prob_key);
 
         for(auto sol_idx = std::make_reverse_iterator(sol_iter.second);
             !success && sol_idx != std::make_reverse_iterator(sol_iter.first);
             sol_idx++)
         {
+            hipblaslt_cout << "for sol_idx: " << sol_idx->second << std::endl; 
             solutionIndex[0]        = sol_idx->second;
             size_t maxWorkspaceSize = std::numeric_limits<size_t>::max();
             if(rocblaslt_status_success
@@ -271,7 +294,7 @@ bool problem_override_from_file_cpp(
             log_info(__func__, mapping_result);
         }
     }
-
+    hipblaslt_cout << "return, success" << std::endl;
     return success;
 }
 
@@ -824,9 +847,18 @@ rocblaslt_status rocblaslt_matmul_desc_create(rocblaslt_matmul_desc* matmulDesc,
             (*matmulDesc)->compute_type          = computeType;
             (*matmulDesc)->compute_type_original = computeType;
             (*matmulDesc)->scale_type            = scaleType;
+            
+            // MGV: xf32 is apparently forced to f32
+            /*
             auto computeTypeInit                 = computeType == rocblaslt_compute_f32_fast_xf32
                                                        ? rocblaslt_compute_f32
                                                        : computeType;
+            */
+            
+            auto computeTypeInit                 = computeType == rocblaslt_compute_f32_fast_xf32
+                                                       ? rocblaslt_compute_f32_fast_xf32
+                                                       : computeType;
+
             auto dataType                        = HIP_R_32F;
             if(computeTypeInit == rocblaslt_compute_f64)
                 dataType = HIP_R_64F;
@@ -1750,16 +1782,21 @@ rocblaslt_status
         bool               override_success = false;
         if(override.env_mode)
         {
+            hipblaslt_cout << "rocblaslt_matmul_algo_get_heuristic, Problem override from file, in" << std::endl;
             override_success = problem_override_from_file(
                 handle, pref, prob, matmul_desc, heuristicResultsArray, override.file_path);
+            hipblaslt_cout << "rocblaslt_matmul_algo_get_heuristic, Problem override from file, out" << std::endl;
+            
             if(override_success)
                 requestedAlgoCount--;
 
             log_api(__func__, "returnAlgoCount", override_success ? 1 : 0);
         }
-
+        hipblaslt_cout << "requestedAlgoCount: " << requestedAlgoCount << std::endl;
         if(requestedAlgoCount > 0)
         {
+            hipblaslt_cout << "Get best solutions, m in" << std::endl;
+
             status = getBestSolutions(prob,
                                       handle,
                                       tensile_data,
@@ -1768,10 +1805,13 @@ rocblaslt_status
                                                        : heuristicResultsArray,
                                       returnAlgoCount,
                                       pref->max_workspace_bytes);
+            hipblaslt_cout << "Status: " << status << std::endl;    
+            hipblaslt_cout << "Get best solutions, m out" << std::endl; 
         }
 
         if(override_success)
         {
+            hipblaslt_cout << "Override success, if, in" << std::endl;
 
             int oriReturnAlgoCount = *returnAlgoCount;
             if(!heuristicResult_check_duplicated(
@@ -1779,27 +1819,35 @@ rocblaslt_status
             {
                 (*returnAlgoCount)++;
             }
-
+            hipblaslt_cout << "requestedAlgorithm++" << std::endl;
             requestedAlgoCount++;
         }
+        hipblaslt_cout << "Override success, if, out" << std::endl;
 
         if(dummy_bias_address)
             matmul_desc->bias = nullptr;
         log_api(__func__, "returnAlgoCount", *returnAlgoCount);
-
+        hipblaslt_cout << "Requested algo count " << requestedAlgoCount << std::endl;
+        hipblaslt_cout << "Return algo count " << *returnAlgoCount << std::endl;
         //Try to get size independent solutions from getAllSolutions()
         if(requestedAlgoCount > *returnAlgoCount)
         {
+            hipblaslt_cout << "requestedAlgoCount >" << std::endl;
+
             std::vector<rocblaslt_matmul_heuristic_result> allSolutionsResults;
             if(rocblaslt_status_success
                == getAllSolutions(prob, handle, allSolutionsResults, pref->max_workspace_bytes))
             {
+                hipblaslt_cout << "rocblaslt status success " << rocblaslt_status_success << std::endl;
+                hipblaslt_cout << "getAllSolutions, if " << std::endl;
+                hipblaslt_cout << "all solutions results "<<  allSolutionsResults.size() << std::endl;
                 int oriReturnAlgoCount = *returnAlgoCount;
                 for(int i = 0;
                     *returnAlgoCount < requestedAlgoCount && i < allSolutionsResults.size();
                     i++)
                 {
                     size_t required_workspace_size = 0;
+                    hipblaslt_cout << "heur check duplicated, m" << std::endl;
                     if(heuristicResult_check_duplicated(heuristicResultsArray,
                                                         &allSolutionsResults[i],
                                                         oriReturnAlgoCount,
@@ -1811,7 +1859,7 @@ rocblaslt_status
                                                      &allSolutionsResults[i].algo,
                                                      &required_workspace_size))
                         continue;
-
+                    hipblaslt_cout << "HeuristicResult copy, m" << std::endl;
                     //append sol to heuristpicResultsArray
                     heuristicResult_copy(&heuristicResultsArray[*returnAlgoCount],
                                          &allSolutionsResults[i],
@@ -1826,6 +1874,7 @@ rocblaslt_status
 
         if(status != rocblaslt_status_success)
         {
+            hipblaslt_cout << "Status: " << status << std::endl;
             throw status;
         }
     }

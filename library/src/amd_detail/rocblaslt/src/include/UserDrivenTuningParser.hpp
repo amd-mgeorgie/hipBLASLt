@@ -57,15 +57,16 @@ private:
     OverrideSingleton()
     {
         
-        // hipblaslt_cout << "OverrideSingleton, m" << std::endl;
+        hipblaslt_cout << "OverrideSingleton, m" << std::endl;
 
         char* Env = getenv("HIPBLASLT_TUNING_OVERRIDE_FILE");
+        hipblaslt_cout << "Env: " << Env << std::endl;
+
         if(Env)
         {                        
-            file_path = Env;
-            
+            file_path = Env;            
             //std::cout << file_path << std::flush << std::endl;
-            //hipblaslt_cout << file_path << std::endl;
+            hipblaslt_cout << file_path << std::endl;
             env_mode  = true;
         }
     }
@@ -86,6 +87,7 @@ namespace TensileLite
                         rocisa::DataType inputTypeB,
                         rocisa::DataType computeType,
                         rocisa::DataType outputType,
+                        rocisa::DataType biasType,
                         size_t           m,
                         size_t           n,
                         size_t           k,
@@ -117,6 +119,10 @@ namespace TensileLite
         {
             return m_outputType;
         }
+        inline rocisa::DataType biasType() const
+        {
+            return m_biasType;
+        }
         inline size_t m() const
         {
             return m_m;
@@ -143,10 +149,7 @@ namespace TensileLite
         {
             return m_to_use_bias;
         }
-        inline rocisa::DataType biasType() const
-        {
-            return m_biasType;
-        }
+        
     private:
         bool             m_transA;
         bool             m_transB;
@@ -189,6 +192,8 @@ namespace TensileLite
                                         rhs.computeType(),
                                         lhs.outputType(),
                                         rhs.outputType(),
+                                        lhs.biasType(),
+                                        rhs.biasType(),
                                         lhs.m(),
                                         rhs.m(),
                                         lhs.n(),
@@ -196,13 +201,12 @@ namespace TensileLite
                                         lhs.k(),
                                         rhs.k(),
                                         lhs.batchSize(),
-                                        rhs.batchSize(),
-                                        lhs.to_use_bias(),
-                                        rhs.to_use_bias(),
-                                        lhs.rotSize(),
-                                        rhs.rotSize(),
-                                        lhs.biasType(),
-                                        rhs.biasType());
+                                        rhs.batchSize()
+                                        //,lhs.to_use_bias(),
+                                        // rhs.to_use_bias(),
+                                        // lhs.rotSize(),
+                                        // rhs.rotSize()
+                                    );
         }
     };
 
@@ -267,12 +271,14 @@ namespace std
     {
         inline size_t operator()(TensileLite::ProblemOverride const& po) const
         {
+            //MGV TODO:
             return TensileLite::hash_combine(po.transA(),
                                              po.transB(),
                                              po.inputTypeA(),
                                              po.inputTypeB(),
                                              po.computeType(),
                                              po.outputType(),
+                                             po.biasType(),
                                              po.m(),
                                              po.n(),
                                              po.k(),

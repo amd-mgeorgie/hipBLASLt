@@ -46,7 +46,7 @@ bool override_path_compare_git_version(OverrideSingleton& override, hipblasLtHan
 {
     //std::cout << "override_path_compare_git_version, m" << std::flush << std::endl;
     //log_info(__func__, "override_path_compare_git_version, m");
-    //hipblaslt_cout << "override_path_compare_git_version, m" << std::endl;
+    hipblaslt_cout << "override_path_compare_git_version, m" << std::endl;
 
     char git_version[128];
     hipblasLtGetGitRevision(handle, &git_version[0]);
@@ -62,8 +62,8 @@ bool override_path_compare_git_version(OverrideSingleton& override, hipblasLtHan
         //std::cout << "File version: " << file_version << std::flush << std::endl;
         //std::cout << "Git version"   << git_version << std::flush << std::endl;
 
-        //hipblaslt_cout << "File version: " << file_version << std::endl;
-        //hipblaslt_cout << "Git version: " << git_version << std::endl;
+        hipblaslt_cout << "File version: " << file_version << std::endl;
+        hipblaslt_cout << "Git version: " << git_version << std::endl;
 
         //log_info(__func__, git_version);
         //log_info(__func__, file_version);
@@ -448,14 +448,14 @@ try
 {
     // std::cout << "hipblasLtMatmulAlgoGetHeuristic, main " << std::flush << std::endl;
     // log_info(__func__, "hipblasLtMatmulAlgoGetHeuristic, main ");
-    // hipblaslt_cout << "hipblasLtMatmulAlgoGetHeuristic, main" << std::endl;
+    hipblaslt_cout << "hipblasLtMatmulAlgoGetHeuristic, main" << std::endl;
 
     rocblaslt::Debug::Instance().markerStart("hipblasLtMatmulAlgoGetHeuristic");
 
     OverrideSingleton& override = OverrideSingleton::getInstance();
     if(override.env_mode)
     {
-        // hipblaslt_cout << "hipblasLtMatmulAlgoGetHeuristic, if env_mode" << std::endl;
+        hipblaslt_cout << "hipblasLtMatmulAlgoGetHeuristic, if env_mode" << std::endl;
 
         bool override_success = override_path_compare_git_version(override, handle);
         if(override_success)
